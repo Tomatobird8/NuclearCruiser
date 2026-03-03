@@ -26,7 +26,6 @@ namespace NuclearCruiser.Network
             NetworkManager.Singleton.AddNetworkPrefab(prefab);
 
             NuclearCruiser.Logger.LogInfo("Nuclear Cruiser network prefab done.");
-            
         }
 
         public static void SpawnNetworkHandler()

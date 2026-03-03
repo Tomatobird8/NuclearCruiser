@@ -15,14 +15,7 @@ namespace NuclearCruiser.Utils
         
         private void Start()
         {
-            MeshRenderer[] meshRenderers = GetComponentsInChildren<MeshRenderer>();
-            foreach (var renderer in meshRenderers)
-            {
-                if (renderer.transform.name == "MainBody" || renderer.transform.name == "CarHoodMesh" || renderer.transform.name == "Door" || renderer.transform.name == "MainBody (1)" || renderer.transform.name == "MainBody (2)")
-                {
-                    renderer.materials[0].mainTexture = NuclearCruiser.cruiserTexture;
-                }
-            }
+
             if (NuclearCruiser.nuclearCruiserRadiationWarning)
             {
                 HUDManager.Instance.RadiationWarningHUD();
@@ -38,10 +31,21 @@ namespace NuclearCruiser.Utils
                     HUDManager.Instance.DisplayTip("NUCLEAR CRUISER SPAWNED", "Handle with extreme care.", true);
                 }
             }
+            VehicleController? vc = GetComponent<VehicleController>();
+            if (vc == null) return;
             if (NuclearCruiser.infiniteBoosts)
             {
-                GetComponent<VehicleController>().turboBoosts = 5;
-                GetComponent<VehicleController>().AddTurboBoost();
+                vc.turboBoosts = 5;
+                vc.AddTurboBoost();
+            }
+            if (vc.vehicleID != 0) return;
+            MeshRenderer[] meshRenderers = GetComponentsInChildren<MeshRenderer>();
+            foreach (var renderer in meshRenderers)
+            {
+                if (renderer.transform.name == "MainBody" || renderer.transform.name == "CarHoodMesh" || renderer.transform.name == "Door" || renderer.transform.name == "MainBody (1)" || renderer.transform.name == "MainBody (2)")
+                {
+                    renderer.materials[0].mainTexture = NuclearCruiser.cruiserTexture;
+                }
             }
         }
     }

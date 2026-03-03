@@ -4,6 +4,7 @@ using HarmonyLib;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
+using BepInEx.Configuration;
 
 namespace NuclearCruiser
 {
@@ -25,6 +26,10 @@ namespace NuclearCruiser
         internal static bool infiniteBoosts = true;
         internal static bool nuclearCruiserWarning = true;
         internal static bool nuclearCruiserRadiationWarning = true;
+        internal static Fragility cruiserFragility;
+        internal static float minimumCrashVelocity = 4f;
+        internal static int crashDamage = 4;
+        internal static bool onlyPatchVanillaCruiser = true;
 
         private void Awake()
         {
@@ -43,11 +48,17 @@ namespace NuclearCruiser
             }
             else
             {
-                nuclearCruiserChance = Config.Bind<float>("General", "NuclearCruiserChance", 1f, new BepInEx.Configuration.ConfigDescription("Chance of cruiser being a Nuclear Cruiser. 1 is always, 0 is never.", new BepInEx.Configuration.AcceptableValueRange<float>(0f, 1f))).Value;
-                nukeScale = Config.Bind<float>("General", "NukeScale", 0.5f, "How large should the explosion be? 0.5 can already cover most of a moon surface.").Value;
+                nuclearCruiserChance = Config.Bind<float>("General", "NuclearCruiserChance", 1f, new ConfigDescription("Chance of cruiser being a Nuclear Cruiser. 1 is always, 0 is never.", new AcceptableValueRange<float>(0f, 1f))).Value;
+                nukeScale = Config.Bind<float>("General", "NukeScale", 0.75f, "How large should the explosion be? 0.5 can already cover most of a moon's surface.").Value;
                 infiniteBoosts = Config.Bind<bool>("General", "InfiniteBoosts", true, "Should nuclear cruiser have infinite boosts?").Value;
                 nuclearCruiserWarning = Config.Bind<bool>("General", "NuclearCruiserWarning", true, "Should a warning pop up when a Nuclear Cruiser is spawned?").Value;
                 nuclearCruiserRadiationWarning = Config.Bind<bool>("General", "NuclearCruiserRadiationWarning", true, "Should a radiation warning pop up when a Nuclear Cruiser is spawned?").Value;
+                string value = Config.Bind<string>("General", "CruiserFragility", "Fragile", new ConfigDescription("Fragility of the cruiser. Fragile makes cruiser take heavy damage from smaller impacts. Extreme makes cruiser on any impact past minimum crash velocity threshold and may explode upon landing on some moons if set too low.", new AcceptableValueList<string>(["Normal" , "Fragile" , "Extreme"]))).Value;
+                minimumCrashVelocity = Config.Bind<float>("General", "MinimumCrashVelocity", 4f, "Damaging impact velocity threshold. Default threshold is reached at very low speeds.").Value;
+                crashDamage = Config.Bind<int>("General", "CrashDamage", 4, "Amount of damage cruiser takes on impact. Only used when CruiserFragility is set to Fragile.").Value;
+                onlyPatchVanillaCruiser = Config.Bind<bool>("General", "OnlyPatchVanillaCruiser", true, "Only turns the vanilla company cruiser into a nuclear cruiser. Setting this to false will also allow other vehicle types to be nuclear. Texture changes to other vehicles will not be applied.").Value;
+
+                cruiserFragility = (value == "Normal") ? Fragility.Normal : (value == "Fragile") ? Fragility.Fragile : Fragility.Extreme;
 
                 nukeObject.transform.localScale *= nukeScale;
                 cruiserTexture.name = "nukeCruiserTexture";
@@ -104,6 +115,13 @@ namespace NuclearCruiser
             Harmony?.UnpatchSelf();
 
             Logger.LogDebug("Finished unpatching!");
+        }
+
+        internal enum Fragility
+        {
+            Normal,
+            Fragile,
+            Extreme
         }
     }
 }
