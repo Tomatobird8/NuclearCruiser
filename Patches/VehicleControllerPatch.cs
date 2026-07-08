@@ -165,36 +165,58 @@ public static class VehicleControllerPatch
 
     [HarmonyPatch(nameof(VehicleController.CarReactToObstacle))]
     [HarmonyPrefix]
-    public static bool CarReactToObstacle_Pre(VehicleController __instance)
+    public static bool CarReactToObstacle_Pre(VehicleController __instance, bool __runOriginal)
     {
-            if (__instance.GetComponent<CruiserNuker>() == null) return true;
-            if (StartOfRound.Instance.testRoom == null && !StartOfRound.Instance.inShipPhase && !__instance.magnetedToShip && !__instance.carDestroyed && __instance.IsOwner && __instance.averageVelocity.magnitude > NuclearCruiser.minimumCrashVelocity)
-            {
-                if (NuclearCruiser.cruiserFragility == NuclearCruiser.Fragility.Extreme)
-                {
-                    __instance.DestroyCar();
-                    __instance.DestroyCarServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId);
-                }
-                if (NuclearCruiser.cruiserFragility == NuclearCruiser.Fragility.Fragile)
-                {
-                    __instance.DealPermanentDamage(NuclearCruiser.crashDamage);
-                }
-                return false;
-            }
+        if (!__runOriginal) // harmonyX
+        {
+            return false;         
+        }        
+        if (__instance.vehicleID != 0)
+        {
             return true;
+        }
+        if (!__instance.TryGetComponent<CruiserNuker>(out var cruiserNuker))
+        {
+            return true;
+        }
+        if (!__instance.IsOwner || __instance.magnetedToShip || __instance.carDestroyed || __instance.averageVelocity.magnitude < NuclearCruiser.minimumCrashVelocity)
+        {
+            return true;
+        }
+        if (NuclearCruiser.cruiserFragility == NuclearCruiser.Fragility.Extreme)
+        {
+            __instance.DestroyCarServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId);
+            __instance.DestroyCar();
+        }
+        if (NuclearCruiser.cruiserFragility == NuclearCruiser.Fragility.Fragile)
+        {
+            __instance.DealPermanentDamage(NuclearCruiser.crashDamage);
+        }
+        return false;
     }
 
     [HarmonyPatch(nameof(VehicleController.DealPermanentDamage))]
     [HarmonyPrefix]
-    public static bool DealPermanentDamagePatch(VehicleController __instance)
+    public static bool DealPermanentDamage_Pre(VehicleController __instance, bool __runOriginal)
     {
-            if (__instance.GetComponent<CruiserNuker>() == null) return true;
-            if (NuclearCruiser.cruiserFragility == NuclearCruiser.Fragility.Extreme && StartOfRound.Instance.testRoom == null && !StartOfRound.Instance.inShipPhase && !__instance.magnetedToShip && !__instance.carDestroyed && __instance.IsOwner)
-            {
-                __instance.DestroyCar();
-                __instance.DestroyCarServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId);
-                return false;
-            }
+        if (!__runOriginal) // harmonyX
+        {
+            return false;         
+        }
+        if (__instance.vehicleID != 0)
+        {
             return true;
+        }
+        if (!__instance.TryGetComponent<CruiserNuker>(out var cruiserNuker))
+        {
+            return true;
+        }
+        if (!__instance.IsOwner || __instance.magnetedToShip || __instance.carDestroyed || NuclearCruiser.cruiserFragility != NuclearCruiser.Fragility.Extreme)
+        {
+            return true;
+        }        
+        __instance.DestroyCarServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId);            
+        __instance.DestroyCar();
+        return false;
     }
 }
