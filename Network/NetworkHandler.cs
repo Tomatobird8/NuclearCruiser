@@ -47,7 +47,7 @@ internal class NetworkHandler : NetworkBehaviour
         {
             return;
         }
-        if (Instance.gameObject.TryGetComponent<NetworkObject>(out var netObject) && netObject.isSpawned)
+        if (Instance.gameObject.TryGetComponent<NetworkObject>(out var netObject) && netObject.IsSpawned)
         {
             netObject.Despawn();
             NuclearCruiser.Logger.LogInfo("Despawned network handler.");     
@@ -71,14 +71,14 @@ internal class NetworkHandler : NetworkBehaviour
     {
         if (!vehicleNetObjRef.TryGet(out VehicleController vehicleObj))
         {
-            NuclearCruiser.Logger.LogError($"Couldn't find a VehicleController component for {target}");
+            NuclearCruiser.Logger.LogError($"Couldn't find a VehicleController component for {vehicleNetObjRef}");
             return;
         }
         if (vehicleObj.vehicleID != 0)
         {
             return;
         }
-        if (vehicleController.TryGetComponent<CruiserNuker>(out _))
+        if (vehicleObj.TryGetComponent<CruiserNuker>(out _))
         {
             NuclearCruiser.Logger.LogDebug("VehicleController already contains a CruiserNuker component, skipping");        
             return;      
