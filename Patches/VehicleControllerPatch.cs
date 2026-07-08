@@ -107,7 +107,7 @@ public static class VehicleControllerPatch
         // destroyedTruckMesh is a GO, weird naming zeekerss.
         if (__instance.destroyedTruckMesh.TryGetComponent<MeshRenderer>(out var destroyedMesh)) 
         {
-            // ideally, you would do a material swap on Start() or when-ever the Nuker is added to the truck, not replace a MainTexture upon destruction.
+            // ideally, you would do a material swap on OnNetworkSpawn() or when-ever the Nuker is added to the truck, not replace a MainTexture upon destruction.
             // unfortunately, i don't have access to those assets, this is something you'll have to do. - Scandal
             destroyedMesh.materials[0].mainTexture = NuclearCruiser.destroyedCruiserTexture;
         }      
