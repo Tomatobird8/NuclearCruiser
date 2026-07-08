@@ -46,6 +46,16 @@ public class CruiserNuker : MonoBehaviour
             vehicleController.AddTurboBoost();
         }
         MeshRenderer[] meshRenderers = GetComponentsInChildren<MeshRenderer>();
+        for (int i = 0; i < meshRenderers.Length; i++)
+        {
+            if (meshRenderers[i].transform.name.Contains("MainBody") || 
+                meshRenderers[i].transform.name == "CarHoodMesh" || 
+                meshRenderers[i].transform.name == "Door")
+            {
+                meshRenderers[i].materials[0].mainTexture = NuclearCruiser.cruiserTexture;
+            }
+        }
+        /*
         foreach (var renderer in meshRenderers)
         {
             if (renderer.transform.name.Contains("MainBody") || renderer.transform.name == "CarHoodMesh" || renderer.transform.name == "Door")
@@ -53,5 +63,6 @@ public class CruiserNuker : MonoBehaviour
                 renderer.materials[0].mainTexture = NuclearCruiser.cruiserTexture;
             }
         }
+        */
     }
 }
