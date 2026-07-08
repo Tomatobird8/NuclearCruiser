@@ -27,7 +27,7 @@ public static class GameNetworkManagerPatch
     {
         try
         {
-            if (StartOfRound.Instance.attachedVehicle && StartOfRound.Instance.attachedVehicle.vehicleID == 0 && )
+            if (StartOfRound.Instance.attachedVehicle && StartOfRound.Instance.attachedVehicle.vehicleID == 0 && StartOfRound.Instance.attachedVehicle.TryGetComponent<CruiserNuker>(out _))
             {
                 ES3.Save(MyPluginInfo.PLUGIN_NAME + NuclearCruiser.IsNuclear, true, GameNetworkManager.Instance.currentSaveFileName);
             }
