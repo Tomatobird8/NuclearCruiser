@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using NuclearCruiser.Utils;
 using UnityEngine;
 
@@ -26,7 +26,7 @@ public static class VehicleControllerPatch
         float value = (float)random.NextDouble();
         if (value < NuclearCruiser.nuclearCruiserChance)
         {
-            Network.NetworkHandler.Instance.AddCruiserNukerClientRpc(__instance.NetworkObject);
+            Network.NetworkHandler.Instance.AddCruiserNukerRpc(__instance);
         }          
         /*
         if ((__instance.NetworkManager.IsHost || __instance.NetworkManager.IsServer) && StartOfRound.Instance.attachedVehicle != __instance)
@@ -143,7 +143,7 @@ public static class VehicleControllerPatch
         int contactCount = collision.GetContacts(__instance.contacts);
         for (int i = 0; i < contactCount; i++)
         {
-            if (__instance.contacts[i].impulse.magnitude > num)
+            if (__instance.contacts[i].impulse.magnitude > collisionImpulse)
             {
                 collisionImpulse = __instance.contacts[i].impulse.magnitude;
             }
