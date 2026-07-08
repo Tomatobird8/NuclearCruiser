@@ -4,7 +4,7 @@ namespace NuclearCruiser.Utils;
 
 public class CruiserNuker : MonoBehaviour
 {
-    internal void Explode()
+    public void Explode()
     {
         GameObject? nukeObject = Instantiate(NuclearCruiser.nukeObject);
         if (nukeObject != null)
@@ -13,7 +13,7 @@ public class CruiserNuker : MonoBehaviour
         }
     }
 
-    private void Start()
+    public void Start()
     {
         if (NuclearCruiser.nuclearCruiserRadiationWarning && !StartOfRound.Instance.inShipPhase)
         {
