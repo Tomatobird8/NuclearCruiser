@@ -9,14 +9,14 @@ public static class GameNetworkManagerPatch
 {
     [HarmonyPatch(nameof(GameNetworkManager.Start))]
     [HarmonyPostfix]
-    public static void StartPostfix()
+    public static void Start_Post()
     {
         Network.NetworkHandler.CreateAndRegisterPrefab();
     }
 
     [HarmonyPatch(nameof(GameNetworkManager.Disconnect))]
     [HarmonyPrefix]
-    public static void DisconnectPostfix()
+    public static void Disconnect_Pre()
     {
         Network.NetworkHandler.DespawnNetworkHandler();
     }
@@ -27,7 +27,8 @@ public static class GameNetworkManagerPatch
     {
         try
         {
-            if (StartOfRound.Instance.attachedVehicle && StartOfRound.Instance.attachedVehicle.vehicleID == 0 && StartOfRound.Instance.attachedVehicle.TryGetComponent<CruiserNuker>(out _))
+            VehicleController vehicleController = StartOfRound.Instance.attachedVehicle;        
+            if (vehicleController && vehicleController.vehicleID == 0 && vehicleController.TryGetComponent<CruiserNuker>(out _))
             {
                 ES3.Save(MyPluginInfo.PLUGIN_NAME + NuclearCruiser.IsNuclear, true, GameNetworkManager.Instance.currentSaveFileName);
             }
