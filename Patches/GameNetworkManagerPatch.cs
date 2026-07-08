@@ -9,21 +9,21 @@ namespace NuclearCruiser.Patches
     {
         [HarmonyPatch(nameof(GameNetworkManager.Start))]
         [HarmonyPostfix]
-        private static void StartPostfix()
+        public static void StartPostfix()
         {
             Network.NetworkHandler.CreateAndRegisterPrefab();
         }
 
         [HarmonyPatch(nameof(GameNetworkManager.Disconnect))]
         [HarmonyPrefix]
-        private static void DisconnectPostfix()
+        public static void DisconnectPostfix()
         {
             Network.NetworkHandler.DespawnNetworkHandler();
         }
 
         [HarmonyPatch(nameof(GameNetworkManager.SaveItemsInShip))]
         [HarmonyPostfix]
-        private static void SaveItemsInShip_Postfix(GameNetworkManager __instance)
+        public static void SaveItemsInShip_Postfix(GameNetworkManager __instance)
         {
             if (!StartOfRound.Instance.attachedVehicle) return;
             try
