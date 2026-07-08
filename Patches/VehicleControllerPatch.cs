@@ -206,11 +206,12 @@ public static class VehicleControllerPatch
         {
             return true;
         }
-        if (!__instance.TryGetComponent<CruiserNuker>(out var cruiserNuker))
+        if (!__instance.TryGetComponent<CruiserNuker>(out _))
         {
             return true;
         }
-        if (!__instance.IsOwner || __instance.magnetedToShip || __instance.carDestroyed || NuclearCruiser.cruiserFragility != NuclearCruiser.Fragility.Extreme)
+        if (!__instance.IsOwner || __instance.magnetedToShip || __instance.carDestroyed || 
+            NuclearCruiser.cruiserFragility != NuclearCruiser.Fragility.Extreme)
         {
             return true;
         }        
