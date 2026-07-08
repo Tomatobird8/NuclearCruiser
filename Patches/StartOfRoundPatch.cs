@@ -1,50 +1,58 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using System;
 using NuclearCruiser.Utils;
 
-namespace NuclearCruiser.Patches
+namespace NuclearCruiser.Patches;
+
+[HarmonyPatch(typeof(StartOfRound))]
+public static class StartOfRoundPatch
 {
-    [HarmonyPatch(typeof(StartOfRound))]
-    internal class StartOfRoundPatch
+    [HarmonyPatch(nameof(StartOfRound.Awake))]
+    [HarmonyPrefix]
+    public static void Awake_Pre()
     {
-        [HarmonyPatch(nameof(StartOfRound.Awake))]
-        [HarmonyPrefix]
-        private static void AwakePrefix()
-        {
-            Network.NetworkHandler.SpawnNetworkHandler();
-        }
+        Network.NetworkHandler.SpawnNetworkHandler();
+    }
 
-        [HarmonyPatch(nameof(StartOfRound.SyncAlreadyHeldObjectsServerRpc))]
-        [HarmonyPostfix]
-        private static void SyncAlreadyHeldObjectsServerRpc()
+    [HarmonyPatch(nameof(StartOfRound.SyncAlreadyHeldObjectsServerRpc))]
+    [HarmonyPostfix]
+    public static void SyncAlreadyHeldObjectsServerRpc_Post()
+    {
+        VehicleController vehicleController = StartOfRound.Instance.attachedVehicle;
+        if (!vehicleController)
         {
-            VehicleController vc = StartOfRound.Instance.attachedVehicle;
-            if (!vc) return;
-            CruiserNuker nuker = vc.gameObject.GetComponent<CruiserNuker>();
-            if (!nuker) return;
-            Network.NetworkHandler.Instance.AddCruiserNukerClientRpc(vc.NetworkObject);
+            return;
         }
-
-        [HarmonyPatch(nameof(StartOfRound.LoadAttachedVehicle))]
-        [HarmonyPostfix]
-        private static void LoadAttachedVehicle_Postfix() 
+        if (!vehicleController.gameObject.TryGetComponent<CruiserNuker>(out var cruiserNuker))
         {
-            try
+            return;
+        }
+        Network.NetworkHandler.Instance.AddCruiserNukerRpc(vehicleController);
+    }
+
+    [HarmonyPatch(nameof(StartOfRound.LoadAttachedVehicle))]
+    [HarmonyPostfix]
+    public static void LoadAttachedVehicle_Post(StartOfRound __instance)
+    {
+        if (!__instance.attachedVehicle || __instance.attachedVehicle.vehicleID != 0)
+        {
+            return;
+        }
+        try
+        {
+            if (ES3.KeyExists(MyPluginInfo.PLUGIN_NAME + NuclearCruiser.IsNuclear, GameNetworkManager.Instance.currentSaveFileName))
             {
-                if (ES3.KeyExists(MyPluginInfo.PLUGIN_NAME + NuclearCruiser.IsNuclear, GameNetworkManager.Instance.currentSaveFileName))
+                VehicleController vehicleController = __instance.attachedVehicle;
+                bool cruiserState = ES3.Load<bool>(MyPluginInfo.PLUGIN_NAME + NuclearCruiser.IsNuclear, GameNetworkManager.Instance.currentSaveFileName);
+                if (cruiserState && !vehicleController.gameObject.TryGetComponent<CruiserNuker>(out _))
                 {
-                    bool cruiserState = ES3.Load<bool>(MyPluginInfo.PLUGIN_NAME + NuclearCruiser.IsNuclear, GameNetworkManager.Instance.currentSaveFileName);
-                    if (cruiserState && !StartOfRound.Instance.attachedVehicle.gameObject.GetComponent<CruiserNuker>())
-                    {
-                        Network.NetworkHandler.Instance.AddCruiserNukerClientRpc(StartOfRound.Instance.attachedVehicle.NetworkObject);
-                    }
+                    Network.NetworkHandler.Instance.AddCruiserNukerRpc(vehicleController);
                 }
             }
-            catch(Exception e)
-            {
-                NuclearCruiser.Logger.LogError($"Failed to load nuclear cruiser data: {e}");
-            }
-            
+        }
+        catch (Exception e)
+        {
+            NuclearCruiser.Logger.LogError($"Failed to load nuclear cruiser data: {e}");
         }
     }
 }
