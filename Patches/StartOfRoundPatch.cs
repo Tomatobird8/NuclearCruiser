@@ -34,14 +34,19 @@ public static class StartOfRoundPatch
     [HarmonyPostfix]
     public static void LoadAttachedVehicle_Post() 
     {
+        if (!__instance.attachedVehicle || __instance.attachedVehicle.vehicleID != 0)
+        {
+            return;
+        }
         try
         {
             if (ES3.KeyExists(MyPluginInfo.PLUGIN_NAME + NuclearCruiser.IsNuclear, GameNetworkManager.Instance.currentSaveFileName))
             {
+                VehicleController vehicleController = StartOfRound.Instance.attachedVehicle;
                 bool cruiserState = ES3.Load<bool>(MyPluginInfo.PLUGIN_NAME + NuclearCruiser.IsNuclear, GameNetworkManager.Instance.currentSaveFileName);
                 if (cruiserState && !vehicleController.gameObject.TryGetComponent<CruiserNuker>(out _))
                 {
-                    Network.NetworkHandler.Instance.AddCruiserNukerClientRpc(StartOfRound.Instance.attachedVehicle.NetworkObject);
+                    Network.NetworkHandler.Instance.AddCruiserNukerClientRpc(vehicleController.NetworkObject);
                 }
             }
         }
