@@ -6,122 +6,121 @@ using System.Reflection;
 using UnityEngine;
 using BepInEx.Configuration;
 
-namespace NuclearCruiser
+namespace NuclearCruiser;
+
+[BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+
+public class NuclearCruiser : BaseUnityPlugin
 {
-    [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+    public static NuclearCruiser Instance { get; private set; } = null!;
+    internal new static ManualLogSource Logger { get; private set; } = null!;
+    internal static Harmony? Harmony { get; set; }
 
-    public class NuclearCruiser : BaseUnityPlugin
+    internal static string IsNuclear = "isNuclear";
+
+    internal static Texture2D? cruiserTexture;
+    internal static Texture2D? destroyedCruiserTexture;
+
+    internal static GameObject? nukeObject;
+
+    internal static float nukeScale = 0.5f;
+    internal static float nuclearCruiserChance = 1f;
+    internal static bool infiniteBoosts = true;
+    internal static bool nuclearCruiserWarning = true;
+    internal static bool nuclearCruiserRadiationWarning = true;
+    internal static Fragility cruiserFragility;
+    internal static float minimumCrashVelocity = 4f;
+    internal static int crashDamage = 4;
+
+    private void Awake()
     {
-        public static NuclearCruiser Instance { get; private set; } = null!;
-        internal new static ManualLogSource Logger { get; private set; } = null!;
-        internal static Harmony? Harmony { get; set; }
+        Logger = base.Logger;
+        Instance = this;
 
-        internal static string IsNuclear = "isNuclear";
+        cruiserTexture = GetTexture(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cruiser.png"));
+        destroyedCruiserTexture = GetTexture(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cruiser_blown.png"));
 
-        internal static Texture2D? cruiserTexture;
-        internal static Texture2D? destroyedCruiserTexture;
+        AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cruisernuke"));
+        nukeObject = bundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/TomatoScrap/Prefabs/Miscallaneous/NuclearBombCruiser.prefab");
 
-        internal static GameObject? nukeObject;
-
-        internal static float nukeScale = 0.5f;
-        internal static float nuclearCruiserChance = 1f;
-        internal static bool infiniteBoosts = true;
-        internal static bool nuclearCruiserWarning = true;
-        internal static bool nuclearCruiserRadiationWarning = true;
-        internal static Fragility cruiserFragility;
-        internal static float minimumCrashVelocity = 4f;
-        internal static int crashDamage = 4;
-
-        private void Awake()
+        if (cruiserTexture == null || destroyedCruiserTexture == null || nukeObject == null)
         {
-            Logger = base.Logger;
-            Instance = this;
-
-            cruiserTexture = GetTexture(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cruiser.png"));
-            destroyedCruiserTexture = GetTexture(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cruiser_blown.png"));
-
-            AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cruisernuke"));
-            nukeObject = bundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/TomatoScrap/Prefabs/Miscallaneous/NuclearBombCruiser.prefab");
-
-            if (cruiserTexture == null || destroyedCruiserTexture == null || nukeObject == null)
-            {
-                Logger.LogError("Failed to load textures. Plugin loading failed.");
-            }
-            else
-            {
-                nuclearCruiserChance = Config.Bind<float>("General", "NuclearCruiserChance", 1f, new ConfigDescription("Chance of cruiser being a Nuclear Cruiser. 1 is always, 0 is never.", new AcceptableValueRange<float>(0f, 1f))).Value;
-                nukeScale = Config.Bind<float>("General", "NukeScale", 0.75f, "How large should the explosion be? 0.5 can already cover most of a moon's surface.").Value;
-                infiniteBoosts = Config.Bind<bool>("General", "InfiniteBoosts", true, "Should nuclear cruiser have infinite boosts?").Value;
-                nuclearCruiserWarning = Config.Bind<bool>("General", "NuclearCruiserWarning", true, "Should a warning pop up when a Nuclear Cruiser is spawned?").Value;
-                nuclearCruiserRadiationWarning = Config.Bind<bool>("General", "NuclearCruiserRadiationWarning", true, "Should a radiation warning pop up when a Nuclear Cruiser is spawned?").Value;
-                string value = Config.Bind<string>("General", "CruiserFragility", "Fragile", new ConfigDescription("Fragility of the cruiser. Fragile makes cruiser take heavy damage from smaller impacts. Extreme makes cruiser on any impact past minimum crash velocity threshold and may explode upon landing on some moons if set too low.", new AcceptableValueList<string>(["Normal" , "Fragile" , "Extreme"]))).Value;
-                minimumCrashVelocity = Config.Bind<float>("General", "MinimumCrashVelocity", 4f, "Damaging impact velocity threshold. Default threshold is reached at very low speeds.").Value;
-                crashDamage = Config.Bind<int>("General", "CrashDamage", 4, "Amount of damage cruiser takes on impact. Only used when CruiserFragility is set to Fragile.").Value;
-
-                cruiserFragility = (value == "Normal") ? Fragility.Normal : (value == "Fragile") ? Fragility.Fragile : Fragility.Extreme;
-
-                nukeObject.transform.localScale *= nukeScale;
-                cruiserTexture.name = "nukeCruiserTexture";
-                destroyedCruiserTexture.name = "blownNukeCruiserTexture";
-                Patch();
-                PatchNetwork();
-                Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded!");
-            }
+            Logger.LogError("Failed to load textures. Plugin loading failed.");
         }
-
-        internal static Texture2D? GetTexture(string path)
+        else
         {
-            if (File.Exists(path))
-            {
-                Texture2D t = new Texture2D(2, 2);
-                ImageConversion.LoadImage(t, File.ReadAllBytes(path));
-                return t;
-            }
-            return null;
+            nuclearCruiserChance = Config.Bind<float>("General", "NuclearCruiserChance", 1f, new ConfigDescription("Chance of cruiser being a Nuclear Cruiser. 1 is always, 0 is never.", new AcceptableValueRange<float>(0f, 1f))).Value;
+            nukeScale = Config.Bind<float>("General", "NukeScale", 0.75f, "How large should the explosion be? 0.5 can already cover most of a moon's surface.").Value;
+            infiniteBoosts = Config.Bind<bool>("General", "InfiniteBoosts", true, "Should nuclear cruiser have infinite boosts?").Value;
+            nuclearCruiserWarning = Config.Bind<bool>("General", "NuclearCruiserWarning", true, "Should a warning pop up when a Nuclear Cruiser is spawned?").Value;
+            nuclearCruiserRadiationWarning = Config.Bind<bool>("General", "NuclearCruiserRadiationWarning", true, "Should a radiation warning pop up when a Nuclear Cruiser is spawned?").Value;
+            string value = Config.Bind<string>("General", "CruiserFragility", "Fragile", new ConfigDescription("Fragility of the cruiser. Fragile makes cruiser take heavy damage from smaller impacts. Extreme makes cruiser on any impact past minimum crash velocity threshold and may explode upon landing on some moons if set too low.", new AcceptableValueList<string>(["Normal", "Fragile", "Extreme"]))).Value;
+            minimumCrashVelocity = Config.Bind<float>("General", "MinimumCrashVelocity", 4f, "Damaging impact velocity threshold. Default threshold is reached at very low speeds.").Value;
+            crashDamage = Config.Bind<int>("General", "CrashDamage", 4, "Amount of damage cruiser takes on impact. Only used when CruiserFragility is set to Fragile.").Value;
+
+            cruiserFragility = (value == "Normal") ? Fragility.Normal : (value == "Fragile") ? Fragility.Fragile : Fragility.Extreme;
+
+            nukeObject.transform.localScale *= nukeScale;
+            cruiserTexture.name = "nukeCruiserTexture";
+            destroyedCruiserTexture.name = "blownNukeCruiserTexture";
+            Patch();
+            PatchNetwork();
+            Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded!");
         }
+    }
 
-        internal static void PatchNetwork()
+    internal static Texture2D? GetTexture(string path)
+    {
+        if (File.Exists(path))
         {
-            var types = Assembly.GetExecutingAssembly().GetTypes();
-            foreach (var type in types)
+            Texture2D t = new Texture2D(2, 2);
+            ImageConversion.LoadImage(t, File.ReadAllBytes(path));
+            return t;
+        }
+        return null;
+    }
+
+    internal static void PatchNetwork()
+    {
+        var types = Assembly.GetExecutingAssembly().GetTypes();
+        foreach (var type in types)
+        {
+            var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            foreach (var method in methods)
             {
-                var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                foreach (var method in methods)
+                var attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
+                if (attributes.Length > 0)
                 {
-                    var attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
-                    if (attributes.Length > 0)
-                    {
-                        method.Invoke(null, null);
-                    }
+                    method.Invoke(null, null);
                 }
             }
         }
+    }
 
-        internal static void Patch()
-        {
-            Harmony ??= new Harmony(MyPluginInfo.PLUGIN_GUID);
+    internal static void Patch()
+    {
+        Harmony ??= new Harmony(MyPluginInfo.PLUGIN_GUID);
 
-            Logger.LogDebug("Patching...");
+        Logger.LogDebug("Patching...");
 
-            Harmony.PatchAll();
+        Harmony.PatchAll();
 
-            Logger.LogDebug("Finished patching!");
-        }
+        Logger.LogDebug("Finished patching!");
+    }
 
-        internal static void Unpatch()
-        {
-            Logger.LogDebug("Unpatching...");
+    internal static void Unpatch()
+    {
+        Logger.LogDebug("Unpatching...");
 
-            Harmony?.UnpatchSelf();
+        Harmony?.UnpatchSelf();
 
-            Logger.LogDebug("Finished unpatching!");
-        }
+        Logger.LogDebug("Finished unpatching!");
+    }
 
-        internal enum Fragility
-        {
-            Normal,
-            Fragile,
-            Extreme
-        }
+    internal enum Fragility
+    {
+        Normal,
+        Fragile,
+        Extreme
     }
 }
