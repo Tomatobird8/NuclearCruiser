@@ -5,7 +5,7 @@ using System;
 namespace NuclearCruiser.Patches
 {
     [HarmonyPatch(typeof(GameNetworkManager))]
-    internal class GameNetworkManagerPatch
+    public static class GameNetworkManagerPatch
     {
         [HarmonyPatch(nameof(GameNetworkManager.Start))]
         [HarmonyPostfix]
