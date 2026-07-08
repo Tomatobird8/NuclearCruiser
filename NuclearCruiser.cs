@@ -32,7 +32,7 @@ public class NuclearCruiser : BaseUnityPlugin
     internal static float minimumCrashVelocity = 4f;
     internal static int crashDamage = 4;
 
-    private void Awake()
+    public void Awake()
     {
         Logger = base.Logger;
         Instance = this;
@@ -64,7 +64,7 @@ public class NuclearCruiser : BaseUnityPlugin
             cruiserTexture.name = "nukeCruiserTexture";
             destroyedCruiserTexture.name = "blownNukeCruiserTexture";
             Patch();
-            PatchNetwork();
+            //PatchNetwork(); this is not actually needed with the current version
             Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded!");
         }
     }
@@ -80,6 +80,7 @@ public class NuclearCruiser : BaseUnityPlugin
         return null;
     }
 
+    /*
     internal static void PatchNetwork()
     {
         var types = Assembly.GetExecutingAssembly().GetTypes();
@@ -96,6 +97,7 @@ public class NuclearCruiser : BaseUnityPlugin
             }
         }
     }
+    */
 
     internal static void Patch()
     {
