@@ -15,20 +15,19 @@ public static class VehicleControllerPatch
         if (__instance.vehicleID != 0)
         {
             return;
-        }
-            
+        }           
         // not sure what the intent is here, if it's supposed to be randomised when bought, using inShipPhase is probably better here
         // also we can just check server instead of "is host or is server" since both will yield true anyways, and server makes the most sense here
         if (!__instance.NetworkManager.IsServer || StartOfRound.Instance.inShipPhase)
+        {
             return;
-
+        }
         System.Random random = new();
         float value = (float)random.NextDouble();
         if (value < NuclearCruiser.nuclearCruiserChance)
         {
             Network.NetworkHandler.Instance.AddCruiserNukerClientRpc(__instance.NetworkObject);
-        }
-            
+        }          
         /*
         if ((__instance.NetworkManager.IsHost || __instance.NetworkManager.IsServer) && StartOfRound.Instance.attachedVehicle != __instance)
         {
@@ -78,8 +77,7 @@ public static class VehicleControllerPatch
         if (!__instance.TryGetComponent<CruiserNuker>(out var cruiserNuker))
         {
             return;
-        }
-        
+        }  
         MeshRenderer[] meshRenderers = __instance.GetComponentsInChildren<MeshRenderer>();
         // for loop is cheaper than a foreach
         for (int i = 0; i < meshRenderers.Length; i++)
@@ -112,8 +110,7 @@ public static class VehicleControllerPatch
             // ideally, you would do a material swap on Start() or when-ever the Nuker is added to the truck, not replace a MainTexture upon destruction.
             // unfortunately, i don't have access to those assets, this is something you'll have to do. - Scandal
             destroyedMesh.materials[0].mainTexture = NuclearCruiser.destroyedCruiserTexture;
-        }
-        
+        }      
         cruiserNuker.Explode();
     }
 
