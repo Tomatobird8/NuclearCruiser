@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
 
-namespace NuclearCruiser.Utils
+namespace NuclearCruiser.Utils;
+
+public class CruiserNuker : MonoBehaviour
 {
-    internal class CruiserNuker : MonoBehaviour
-    {
         internal void Explode()
         {
             GameObject? nuke = Instantiate(NuclearCruiser.nukeObject);
