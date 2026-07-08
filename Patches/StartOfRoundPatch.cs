@@ -23,8 +23,10 @@ public static class StartOfRoundPatch
         {
             return;
         }
-        CruiserNuker cruiserNuker = vehicleController.gameObject.GetComponent<CruiserNuker>();
-        if (!cruiserNuker) return;
+        if (!vehicleController.gameObject.TryGetComponent<CruiserNuker>(out var cruiserNuker))
+        {
+            return;
+        }  
         Network.NetworkHandler.Instance.AddCruiserNukerClientRpc(vehicleController.NetworkObject);
     }
 
