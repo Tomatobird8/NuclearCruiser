@@ -33,7 +33,7 @@ public class CruiserNuker : MonoBehaviour
         {
             if (NuclearCruiser.infiniteBoosts)
             {
-                HUDManager.Instance.DisplayTip("NUCLEAR CRUISER SPAWNED", "Using nuclear power the cruiser can boost infinitely. Handle with extreme care.", true);
+                HUDManager.Instance.DisplayTip("NUCLEAR CRUISER SPAWNED", "Using nuclear power, the cruiser can boost infinitely. Handle with extreme care.", true);
             }
             else
             {
