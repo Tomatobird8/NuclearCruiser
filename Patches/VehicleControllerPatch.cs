@@ -11,7 +11,8 @@ namespace NuclearCruiser.Patches
         [HarmonyPostfix]
         public static void StartPatch(VehicleController __instance)
         {
-            if (NuclearCruiser.onlyPatchVanillaCruiser && __instance.vehicleID != 0)
+            // best to just never patch custom vehicles, as who knows what litany of issues this could just end up causing.
+            if (__instance.vehicleID != 0)
             {
                 return;
             }
