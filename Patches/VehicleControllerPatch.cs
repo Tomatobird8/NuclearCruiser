@@ -122,7 +122,8 @@ public static class VehicleControllerPatch
         {
             return;
         }
-        if (!__instance.TryGetComponent<CruiserNuker>(out var cruiserNuker))
+        //_ = discard
+        if (!__instance.TryGetComponent<CruiserNuker>(out _))
         {
             return;
         }   
