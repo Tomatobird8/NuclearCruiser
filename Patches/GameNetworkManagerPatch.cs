@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using NuclearCruiser.Utils;
 using System;
 
