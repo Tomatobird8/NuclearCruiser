@@ -86,7 +86,7 @@ public static class VehicleControllerPatch
                 meshRenderers[i].transform.name == "CarHoodMesh" || 
                 meshRenderers[i].transform.name == "Door")
             {
-                renderer.materials[0].mainTexture = NuclearCruiser.destroyedCruiserTexture;
+                meshRenderers[i].materials[0].mainTexture = NuclearCruiser.destroyedCruiserTexture;
             }
         }
         /*
