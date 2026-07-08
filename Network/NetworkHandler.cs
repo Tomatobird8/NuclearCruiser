@@ -65,20 +65,34 @@ internal class NetworkHandler : NetworkBehaviour
     }
 
     // take advantage of the new RPC attributes (v73+)
+    // also fixed an issue where multiple nukers could be added, lol
     [Rpc(SendTo.NotServer)]
-    public void AddCruiserNukerRpc(NetworkObjectReference target)
+    public void AddCruiserNukerRpc(NetworkBehaviourReference vehicleNetObjRef)
     {
+        if (!vehicleNetObjRef.TryGet(out VehicleController vehicleObj))
+        {
+            NuclearCruiser.Logger.LogError($"Couldn't find a VehicleController component for {target}");
+            return;
+        }
+        if (vehicleObj.vehicleID != 0)
+        {
+            return;
+        }
+        if (vehicleController.TryGetComponent<CruiserNuker>(out _))
+        {
+            NuclearCruiser.Logger.LogDebug("VehicleController already contains a CruiserNuker component, skipping");        
+            return;      
+        }
+        vehicleObj.NetworkObject.gameObject.AddComponent<CruiserNuker>();
+        /*
         if (target.TryGet(out NetworkObject networkObject))
         {
-            if (vehicleController.TryGetComponent<CruiserNuker>(out _))
-            {
-               
-            }
             networkObject.gameObject.AddComponent<CruiserNuker>();
         }
         else
         {
-            NuclearCruiser.Logger.LogError($"NetworkObject couldn't be found for AddCruiserNukerClientRpc");
+            NuclearCruiser.Logger.LogError("NetworkObject couldn't be found for AddCruiserNukerClientRpc");
         }
+        */
     }
 }
