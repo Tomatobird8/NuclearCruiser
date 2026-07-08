@@ -5,11 +5,11 @@ using UnityEngine;
 namespace NuclearCruiser.Patches
 {
     [HarmonyPatch(typeof(VehicleController))]
-    internal class VehicleControllerPatch
+    public static class VehicleControllerPatch
     {
         [HarmonyPatch(nameof(VehicleController.Start))]
         [HarmonyPostfix]
-        internal static void StartPatch(VehicleController __instance)
+        public static void StartPatch(VehicleController __instance)
         {
             if (NuclearCruiser.onlyPatchVanillaCruiser && __instance.vehicleID != 0)
             {
@@ -28,7 +28,7 @@ namespace NuclearCruiser.Patches
 
         [HarmonyPatch(nameof(VehicleController.UseTurboBoostLocalClient))]
         [HarmonyPostfix]
-        internal static void UseTurboBoostLocalClientPatch(VehicleController __instance)
+        public static void UseTurboBoostLocalClientPatch(VehicleController __instance)
         {
             if (__instance.GetComponent<CruiserNuker>() == null) return;
             if (NuclearCruiser.infiniteBoosts)
@@ -37,7 +37,7 @@ namespace NuclearCruiser.Patches
 
         [HarmonyPatch(nameof(VehicleController.DestroyCar))]
         [HarmonyPrefix]
-        internal static void DestroyCarPatch(VehicleController __instance)
+        public static void DestroyCarPatch(VehicleController __instance)
         {
             if (__instance.carDestroyed)
             {
@@ -63,7 +63,7 @@ namespace NuclearCruiser.Patches
 
         [HarmonyPatch(nameof(VehicleController.OnCollisionEnter))]
         [HarmonyPostfix]
-        internal static void OnCollisionEnterPatch(VehicleController __instance, ref Collision collision)
+        public static void OnCollisionEnterPatch(VehicleController __instance, ref Collision collision)
         {
             if (!__instance.IsOwner || __instance.magnetedToShip || !__instance.hasBeenSpawned || collision.collider.gameObject.layer != 8 || __instance.averageCount < 18 || NuclearCruiser.cruiserFragility == NuclearCruiser.Fragility.Normal || __instance.GetComponent<CruiserNuker>() == null || __instance.averageVelocity.magnitude < NuclearCruiser.minimumCrashVelocity)
             {
@@ -93,7 +93,7 @@ namespace NuclearCruiser.Patches
 
         [HarmonyPatch(nameof(VehicleController.CarReactToObstacle))]
         [HarmonyPrefix]
-        internal static bool CarReactToObstaclePatch(VehicleController __instance)
+        public static bool CarReactToObstaclePatch(VehicleController __instance)
         {
             if (__instance.GetComponent<CruiserNuker>() == null) return true;
             if (StartOfRound.Instance.testRoom == null && !StartOfRound.Instance.inShipPhase && !__instance.magnetedToShip && !__instance.carDestroyed && __instance.IsOwner && __instance.averageVelocity.magnitude > NuclearCruiser.minimumCrashVelocity)
@@ -114,7 +114,7 @@ namespace NuclearCruiser.Patches
 
         [HarmonyPatch(nameof(VehicleController.DealPermanentDamage))]
         [HarmonyPrefix]
-        internal static bool DealPermanentDamagePatch(VehicleController __instance)
+        public static bool DealPermanentDamagePatch(VehicleController __instance)
         {
             if (__instance.GetComponent<CruiserNuker>() == null) return true;
             if (NuclearCruiser.cruiserFragility == NuclearCruiser.Fragility.Extreme && StartOfRound.Instance.testRoom == null && !StartOfRound.Instance.inShipPhase && !__instance.magnetedToShip && !__instance.carDestroyed && __instance.IsOwner)
