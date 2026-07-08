@@ -66,7 +66,7 @@ internal class NetworkHandler : NetworkBehaviour
 
     // take advantage of the new RPC attributes (v73+)
     // also fixed an issue where multiple nukers could be added, lol
-    [Rpc(SendTo.NotServer)]
+    [Rpc(SendTo.Everyone)]
     public void AddCruiserNukerRpc(NetworkBehaviourReference vehicleNetObjRef)
     {
         if (!vehicleNetObjRef.TryGet(out VehicleController vehicleObj))
