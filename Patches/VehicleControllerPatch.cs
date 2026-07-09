@@ -1,5 +1,5 @@
 using HarmonyLib;
-using NuclearCruiser.Utils;
+using NuclearCruiser.MonoBehaviours;
 using UnityEngine;
 
 namespace NuclearCruiser.Patches;
@@ -9,16 +9,15 @@ public static class VehicleControllerPatch
 {
     [HarmonyPatch(nameof(VehicleController.Start))]
     [HarmonyPostfix]
-    public static void Start_Post(VehicleController __instance)
+    public static void Start_Postfix(VehicleController __instance)
     {
-        // best to just never patch custom vehicles, as who knows what litany of issues this could just end up causing.
         if (__instance.vehicleID != 0)
         {
             return;
         }           
-        // not sure what the intent is here, if it's supposed to be randomised when bought, using inShipPhase is probably better here (or check magnet state)
-        // also we can just check server instead of "is host or is server" since both will yield true anyways, and server makes the most sense here
-        if (!__instance.NetworkManager.IsServer || StartOfRound.Instance.inShipPhase || __instance.magnetedToShip)
+        // Cruiser state is only randomized upon purchase.
+        ItemDropship ship = Object.FindAnyObjectByType<ItemDropship>(FindObjectsInactive.Exclude);
+        if (!__instance.NetworkManager.IsServer || ship == null || __instance.magnetedToShip)
         {
             return;
         }
@@ -27,29 +26,22 @@ public static class VehicleControllerPatch
         if (value < NuclearCruiser.nuclearCruiserChance)
         {
             Network.NetworkHandler.Instance.AddCruiserNukerRpc(__instance);
+            Terminal terminalScript = HUDManager.Instance.terminalScript;
+            if (!terminalScript || NuclearCruiser.nuclearCruiserCompensation.Value <= 0) return;
+            terminalScript.groupCredits += NuclearCruiser.nuclearCruiserCompensation.Value;
+            terminalScript.SyncGroupCreditsClientRpc(terminalScript.groupCredits, terminalScript.numberOfItemsInDropship);
+            if (NuclearCruiser.compensationNotification.Value) HUDManager.Instance.AddTextToChatOnServer($"Nuclear cruiser compensation: ${NuclearCruiser.nuclearCruiserCompensation.Value}");
         }          
-        /*
-        if ((__instance.NetworkManager.IsHost || __instance.NetworkManager.IsServer) && StartOfRound.Instance.attachedVehicle != __instance)
-        {
-            System.Random random = new();
-            float value = (float)random.NextDouble();
-            if (value < NuclearCruiser.nuclearCruiserChance)
-            {
-                Network.NetworkHandler.Instance.AddCruiserNukerClientRpc(__instance.NetworkObject);
-            }
-        }
-        */
     }
 
     [HarmonyPatch(nameof(VehicleController.UseTurboBoostLocalClient))]
     [HarmonyPostfix]
-    public static void UseTurboBoostLocalClient_Post(VehicleController __instance)
+    public static void UseTurboBoostLocalClient_Postfix(VehicleController __instance)
     {
         if (__instance.vehicleID != 0)
         {
             return;
         }
-        // discard
         if (!__instance.TryGetComponent<CruiserNuker>(out _))
         {
             return;
@@ -63,7 +55,7 @@ public static class VehicleControllerPatch
 
     [HarmonyPatch(nameof(VehicleController.DestroyCar))]
     [HarmonyPrefix]
-    public static void DestroyCar_Post(VehicleController __instance)
+    public static void DestroyCar_Postfix(VehicleController __instance)
     {
         if (__instance.vehicleID != 0)
         {
@@ -73,13 +65,11 @@ public static class VehicleControllerPatch
         {
             return;
         }
-        // TryGetComponent is cheaper than GetComponent
-        if (!__instance.TryGetComponent<CruiserNuker>(out var cruiserNuker))
+        if (!__instance.TryGetComponent(out CruiserNuker cruiserNuker))
         {
             return;
         }  
         MeshRenderer[] meshRenderers = __instance.GetComponentsInChildren<MeshRenderer>();
-        // for loop is cheaper than a foreach
         for (int i = 0; i < meshRenderers.Length; i++)
         {
             if (meshRenderers[i].transform.name.Contains("MainBody") || 
@@ -88,42 +78,19 @@ public static class VehicleControllerPatch
             {
                 meshRenderers[i].materials[0].mainTexture = NuclearCruiser.destroyedCruiserTexture;
             }
-        }
-        /*
-        foreach (var renderer in meshRenderers)
-        {
-            if (renderer.transform.name.Contains("MainBody") || renderer.transform.name == "CarHoodMesh" || renderer.transform.name == "Door")
-            {
-                renderer.materials[0].mainTexture = NuclearCruiser.destroyedCruiserTexture;
-            }
-        }
-        */
-
-        /*
-        MeshRenderer? m = __instance.transform.Find("Meshes")?.Find("MainBodyDestroyed").GetComponent<MeshRenderer>();
-        if (m != null) m.materials[0].mainTexture = NuclearCruiser.destroyedCruiserTexture;
-        */
-
-        // destroyedTruckMesh is a GO, weird naming zeekerss.
-        if (__instance.destroyedTruckMesh.TryGetComponent<MeshRenderer>(out var destroyedMesh)) 
-        {
-            // ideally, you would do a material swap on OnNetworkSpawn() or when-ever the Nuker is added to the truck, not replace a MainTexture upon destruction.
-            // unfortunately, i don't have access to those assets, this is something you'll have to do. - Scandal
-            destroyedMesh.materials[0].mainTexture = NuclearCruiser.destroyedCruiserTexture;
-        }      
+        } 
         cruiserNuker.Explode();
     }
 
     [HarmonyPatch(nameof(VehicleController.OnCollisionEnter))]
     [HarmonyPostfix]
-    public static void OnCollisionEnter_Post(VehicleController __instance, Collision collision) // removed the ref because we are not changing the collision
+    public static void OnCollisionEnter_Postfix(VehicleController __instance, Collision collision)
     {
         if (__instance.vehicleID != 0)
         {
             return;
         }
-        //_ = discard
-        if (!__instance.TryGetComponent<CruiserNuker>(out _))
+        if (!__instance.TryGetComponent(out CruiserNuker cruiserNuker))
         {
             return;
         }   
@@ -136,10 +103,11 @@ public static class VehicleControllerPatch
             return;
         }
         if (NuclearCruiser.cruiserFragility == NuclearCruiser.Fragility.Normal ||
-            __instance.averageVelocity.magnitude < NuclearCruiser.minimumCrashVelocity)
+            __instance.averageVelocity.magnitude < NuclearCruiser.minimumCrashVelocity ||
+            cruiserNuker.isProtected)
         {
             return;
-        }         
+        }
         float collisionImpulse = 0f;
         int contactCount = collision.GetContacts(__instance.contacts);
         for (int i = 0; i < contactCount; i++)
@@ -163,9 +131,9 @@ public static class VehicleControllerPatch
 
     [HarmonyPatch(nameof(VehicleController.CarReactToObstacle))]
     [HarmonyPrefix]
-    public static bool CarReactToObstacle_Pre(VehicleController __instance, bool __runOriginal)
+    public static bool CarReactToObstacle_Prefix(VehicleController __instance, bool __runOriginal)
     {
-        if (!__runOriginal) // harmonyX
+        if (!__runOriginal)
         {
             return false;         
         }        
@@ -173,12 +141,13 @@ public static class VehicleControllerPatch
         {
             return true;
         }
-        if (!__instance.TryGetComponent<CruiserNuker>(out var cruiserNuker))
+        if (!__instance.TryGetComponent(out CruiserNuker cruiserNuker))
         {
             return true;
         }
         if (!__instance.IsOwner || __instance.magnetedToShip || __instance.carDestroyed || 
-            __instance.averageVelocity.magnitude < NuclearCruiser.minimumCrashVelocity)
+            __instance.averageVelocity.magnitude < NuclearCruiser.minimumCrashVelocity ||
+            cruiserNuker.isProtected)
         {
             return true;
         }
@@ -196,9 +165,9 @@ public static class VehicleControllerPatch
 
     [HarmonyPatch(nameof(VehicleController.DealPermanentDamage))]
     [HarmonyPrefix]
-    public static bool DealPermanentDamage_Pre(VehicleController __instance, bool __runOriginal)
+    public static bool DealPermanentDamage_Prefix(VehicleController __instance, bool __runOriginal)
     {
-        if (!__runOriginal) // harmonyX
+        if (!__runOriginal)
         {
             return false;         
         }
@@ -206,7 +175,11 @@ public static class VehicleControllerPatch
         {
             return true;
         }
-        if (!__instance.TryGetComponent<CruiserNuker>(out _))
+        if (!__instance.TryGetComponent(out CruiserNuker cruiserNuker))
+        {
+            return true;
+        }
+        if (cruiserNuker.isProtected)
         {
             return true;
         }

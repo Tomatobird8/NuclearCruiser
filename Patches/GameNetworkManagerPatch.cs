@@ -1,5 +1,5 @@
 using HarmonyLib;
-using NuclearCruiser.Utils;
+using NuclearCruiser.MonoBehaviours;
 using System;
 
 namespace NuclearCruiser.Patches;
@@ -9,21 +9,21 @@ public static class GameNetworkManagerPatch
 {
     [HarmonyPatch(nameof(GameNetworkManager.Start))]
     [HarmonyPostfix]
-    public static void Start_Post()
+    public static void Start_Postfix()
     {
         Network.NetworkHandler.CreateAndRegisterPrefab();
     }
 
     [HarmonyPatch(nameof(GameNetworkManager.Disconnect))]
     [HarmonyPrefix]
-    public static void Disconnect_Pre()
+    public static void Disconnect_Prefix()
     {
         Network.NetworkHandler.DespawnNetworkHandler();
     }
 
     [HarmonyPatch(nameof(GameNetworkManager.SaveItemsInShip))]
     [HarmonyPostfix]
-    public static void SaveItemsInShip_Post(GameNetworkManager __instance)
+    public static void SaveItemsInShip_Postfix(GameNetworkManager __instance)
     {
         try
         {

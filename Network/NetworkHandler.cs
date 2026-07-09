@@ -1,4 +1,4 @@
-using NuclearCruiser.Utils;
+using NuclearCruiser.MonoBehaviours;
 using System.Linq;
 using System.Reflection;
 using Unity.Netcode;
@@ -64,8 +64,6 @@ internal class NetworkHandler : NetworkBehaviour
         Instance = this;
     }
 
-    // take advantage of the new RPC attributes (v73+)
-    // also fixed an issue where multiple nukers could be added, lol
     [Rpc(SendTo.Everyone)]
     public void AddCruiserNukerRpc(NetworkBehaviourReference vehicleNetObjRef)
     {
@@ -84,15 +82,5 @@ internal class NetworkHandler : NetworkBehaviour
             return;      
         }
         vehicleObj.NetworkObject.gameObject.AddComponent<CruiserNuker>();
-        /*
-        if (target.TryGet(out NetworkObject networkObject))
-        {
-            networkObject.gameObject.AddComponent<CruiserNuker>();
-        }
-        else
-        {
-            NuclearCruiser.Logger.LogError("NetworkObject couldn't be found for AddCruiserNukerClientRpc");
-        }
-        */
     }
 }

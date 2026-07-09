@@ -1,10 +1,13 @@
 using BepInEx;
+using BepInEx.Bootstrap;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using NuclearCruiser.Patches;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
-using BepInEx.Configuration;
+using UnityEngine.Rendering.HighDefinition;
 
 namespace NuclearCruiser;
 
@@ -24,14 +27,23 @@ public class NuclearCruiser : BaseUnityPlugin
 
     internal static GameObject? nukeObject;
 
-    internal static float nukeScale = 0.5f;
     internal static float nuclearCruiserChance = 1f;
+
+    internal static float nukeScale = 0.5f;
+    internal static ConfigEntry<float> nukeVolume = null!;
+    internal static ConfigEntry<float> nukeLightIntensity = null!;
+    internal static ConfigEntry<int> nuclearCruiserCompensation = null!;
+    internal static ConfigEntry<bool> compensationNotification = null!;
+    internal static float protectionTime = 3f;
     internal static bool infiniteBoosts = true;
     internal static bool nuclearCruiserWarning = true;
     internal static bool nuclearCruiserRadiationWarning = true;
     internal static Fragility cruiserFragility;
     internal static float minimumCrashVelocity = 4f;
     internal static int crashDamage = 4;
+
+    internal static bool forcePatchCruiserStart = false;
+    internal static bool isFasterDropshipLoaded = false;
 
     public void Awake()
     {
@@ -51,21 +63,38 @@ public class NuclearCruiser : BaseUnityPlugin
         else
         {
             nuclearCruiserChance = Config.Bind<float>("General", "NuclearCruiserChance", 1f, new ConfigDescription("Chance of cruiser being a Nuclear Cruiser. 1 is always, 0 is never.", new AcceptableValueRange<float>(0f, 1f))).Value;
+
             nukeScale = Config.Bind<float>("General", "NukeScale", 0.75f, "How large should the explosion be? 0.5 can already cover most of a moon's surface.").Value;
+            nukeVolume = Config.Bind<float>("General", "NukeVolume", 0.67f, new ConfigDescription("Sound volume of the nuclear explosion.", new AcceptableValueRange<float>(0f, 1f)));
+            nukeLightIntensity = Config.Bind<float>("General", "NukeLightIntensity", 1f, new ConfigDescription("Intensity of the light from the nuclear explosion.", new AcceptableValueRange<float>(0f, 1f)));
+            nuclearCruiserCompensation = Config.Bind("General", "PurchaseCompensation", 0, "If set to more than 0, this amount of credits will be added to the terminal when a nuclear cruiser is spawned.");
+            compensationNotification = Config.Bind("General", "CompensationNotification", true, "Should the added compensation be announced in chat?");
+            protectionTime = Config.Bind<float>("General", "ProtectionTime", 3f, "Amount of time in seconds the cruiser stays more protected from damage when detached from dropship.").Value;
             infiniteBoosts = Config.Bind<bool>("General", "InfiniteBoosts", true, "Should nuclear cruiser have infinite boosts?").Value;
             nuclearCruiserWarning = Config.Bind<bool>("General", "NuclearCruiserWarning", true, "Should a warning pop up when a Nuclear Cruiser is spawned?").Value;
             nuclearCruiserRadiationWarning = Config.Bind<bool>("General", "NuclearCruiserRadiationWarning", true, "Should a radiation warning pop up when a Nuclear Cruiser is spawned?").Value;
-            string value = Config.Bind<string>("General", "CruiserFragility", "Fragile", new ConfigDescription("Fragility of the cruiser. Fragile makes cruiser take heavy damage from smaller impacts. Extreme makes cruiser on any impact past minimum crash velocity threshold and may explode upon landing on some moons if set too low.", new AcceptableValueList<string>(["Normal", "Fragile", "Extreme"]))).Value;
+            cruiserFragility = Config.Bind<Fragility>("General", "CruiserFragility", Fragility.Fragile, "Fragility of the cruiser. Fragile makes cruiser take heavy damage from smaller impacts. Extreme makes cruiser on any impact past minimum crash velocity threshold and may explode upon landing on some moons if set too low.").Value;
             minimumCrashVelocity = Config.Bind<float>("General", "MinimumCrashVelocity", 4f, "Damaging impact velocity threshold. Default threshold is reached at very low speeds.").Value;
             crashDamage = Config.Bind<int>("General", "CrashDamage", 4, "Amount of damage cruiser takes on impact. Only used when CruiserFragility is set to Fragile.").Value;
 
-            cruiserFragility = (value == "Normal") ? Fragility.Normal : (value == "Fragile") ? Fragility.Fragile : Fragility.Extreme;
+            forcePatchCruiserStart = Config.Bind("Compatibility", "ForcePatchCruiserStart", false, "This patch is automatically applied if FasterItemDropShip is installed. You can also manually force it here.").Value;
 
             nukeObject.transform.localScale *= nukeScale;
+
+            nukeObject.transform.GetChild(5).TryGetComponent(out AudioSource nearNukeAudio);
+            nukeObject.transform.GetChild(5).GetChild(0).TryGetComponent(out AudioSource farNukeAudio);
+            nearNukeAudio.volume = nukeVolume.Value;
+            farNukeAudio.volume = nukeVolume.Value;
+
+            nukeObject.transform.GetChild(1).TryGetComponent(out HDAdditionalLightData light1);
+            nukeObject.transform.GetChild(2).TryGetComponent(out HDAdditionalLightData light2);
+            light1.color = new Color(nukeLightIntensity.Value, nukeLightIntensity.Value, nukeLightIntensity.Value, 1f);
+            light2.color = new Color(nukeLightIntensity.Value, nukeLightIntensity.Value, nukeLightIntensity.Value, 1f);
+
             cruiserTexture.name = "nukeCruiserTexture";
             destroyedCruiserTexture.name = "blownNukeCruiserTexture";
+            isFasterDropshipLoaded = Chainloader.PluginInfos.ContainsKey("FlipMods.FasterItemDropship");
             Patch();
-            //PatchNetwork(); this is not actually needed with the current version
             Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded!");
         }
     }
@@ -81,32 +110,17 @@ public class NuclearCruiser : BaseUnityPlugin
         return null;
     }
 
-    /*
-    internal static void PatchNetwork()
-    {
-        var types = Assembly.GetExecutingAssembly().GetTypes();
-        foreach (var type in types)
-        {
-            var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-            foreach (var method in methods)
-            {
-                var attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
-                if (attributes.Length > 0)
-                {
-                    method.Invoke(null, null);
-                }
-            }
-        }
-    }
-    */
-
     internal static void Patch()
     {
         Harmony ??= new Harmony(MyPluginInfo.PLUGIN_GUID);
 
         Logger.LogDebug("Patching...");
 
-        Harmony.PatchAll();
+        Harmony.PatchAll(typeof(GameNetworkManagerPatch));
+        Harmony.PatchAll(typeof(VehicleControllerPatch));
+        Harmony.PatchAll(typeof(StartOfRoundPatch));
+
+        if (isFasterDropshipLoaded || forcePatchCruiserStart) Harmony.PatchAll(typeof(FasterDropshipCompatibilityPatch));
 
         Logger.LogDebug("Finished patching!");
     }

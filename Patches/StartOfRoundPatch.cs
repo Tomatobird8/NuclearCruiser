@@ -1,6 +1,6 @@
 using HarmonyLib;
 using System;
-using NuclearCruiser.Utils;
+using NuclearCruiser.MonoBehaviours;
 
 namespace NuclearCruiser.Patches;
 
@@ -9,21 +9,21 @@ public static class StartOfRoundPatch
 {
     [HarmonyPatch(nameof(StartOfRound.Awake))]
     [HarmonyPrefix]
-    public static void Awake_Pre()
+    public static void Awake_Prefix()
     {
         Network.NetworkHandler.SpawnNetworkHandler();
     }
 
     [HarmonyPatch(nameof(StartOfRound.SyncAlreadyHeldObjectsServerRpc))]
     [HarmonyPostfix]
-    public static void SyncAlreadyHeldObjectsServerRpc_Post()
+    public static void SyncAlreadyHeldObjectsServerRpc_Postfix()
     {
         VehicleController vehicleController = StartOfRound.Instance.attachedVehicle;
         if (!vehicleController)
         {
             return;
         }
-        if (!vehicleController.gameObject.TryGetComponent<CruiserNuker>(out var cruiserNuker))
+        if (!vehicleController.gameObject.TryGetComponent<CruiserNuker>(out _))
         {
             return;
         }
@@ -32,7 +32,7 @@ public static class StartOfRoundPatch
 
     [HarmonyPatch(nameof(StartOfRound.LoadAttachedVehicle))]
     [HarmonyPostfix]
-    public static void LoadAttachedVehicle_Post(StartOfRound __instance)
+    public static void LoadAttachedVehicle_Postfix(StartOfRound __instance)
     {
         if (!__instance.attachedVehicle || __instance.attachedVehicle.vehicleID != 0)
         {
