@@ -34,6 +34,8 @@ public class NuclearCruiser : BaseUnityPlugin
     internal static ConfigEntry<float> nukeLightIntensity = null!;
     internal static ConfigEntry<int> nuclearCruiserCompensation = null!;
     internal static ConfigEntry<bool> compensationNotification = null!;
+    internal static float decalVisibilityRange = 48f;
+    internal static float decalScale = 2f;
     internal static float protectionTime = 3f;
     internal static bool infiniteBoosts = true;
     internal static bool nuclearCruiserWarning = true;
@@ -69,6 +71,8 @@ public class NuclearCruiser : BaseUnityPlugin
             nukeLightIntensity = Config.Bind<float>("General", "NukeLightIntensity", 1f, new ConfigDescription("Intensity of the light from the nuclear explosion.", new AcceptableValueRange<float>(0f, 1f)));
             nuclearCruiserCompensation = Config.Bind("General", "PurchaseCompensation", 0, "If set to more than 0, this amount of credits will be added to the terminal when a nuclear cruiser is spawned.");
             compensationNotification = Config.Bind("General", "CompensationNotification", true, "Should the added compensation be announced in chat?");
+            decalVisibilityRange = Config.Bind<float>("General", "DecalVisibilityRange", 48f, "How far nuke explosion decals are visible.").Value;
+            decalScale = Config.Bind<float>("General", "DecalScale", 4f, "How large are the nuke explosion decals.").Value;
             protectionTime = Config.Bind<float>("General", "ProtectionTime", 3f, "Amount of time in seconds the cruiser stays more protected from damage when detached from dropship.").Value;
             infiniteBoosts = Config.Bind<bool>("General", "InfiniteBoosts", true, "Should nuclear cruiser have infinite boosts?").Value;
             nuclearCruiserWarning = Config.Bind<bool>("General", "NuclearCruiserWarning", true, "Should a warning pop up when a Nuclear Cruiser is spawned?").Value;
@@ -80,6 +84,12 @@ public class NuclearCruiser : BaseUnityPlugin
             forcePatchCruiserStart = Config.Bind("Compatibility", "ForcePatchCruiserStart", false, "This patch is automatically applied if FasterItemDropShip is installed. You can also manually force it here.").Value;
 
             nukeObject.transform.localScale *= nukeScale;
+
+            Transform nukeDecalTransform = nukeObject.transform.GetChild(0);
+            nukeDecalTransform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            nukeDecalTransform.localScale *= decalScale;
+            nukeDecalTransform.TryGetComponent(out DecalProjector decal);
+            decal.drawDistance = decalVisibilityRange;
 
             nukeObject.transform.GetChild(5).TryGetComponent(out AudioSource nearNukeAudio);
             nukeObject.transform.GetChild(5).GetChild(0).TryGetComponent(out AudioSource farNukeAudio);
@@ -136,7 +146,7 @@ public class NuclearCruiser : BaseUnityPlugin
 
     internal enum Fragility
     {
-        Normal,
+        Default,
         Fragile,
         Extreme
     }

@@ -102,7 +102,7 @@ public static class VehicleControllerPatch
         {
             return;
         }
-        if (NuclearCruiser.cruiserFragility == NuclearCruiser.Fragility.Normal ||
+        if (NuclearCruiser.cruiserFragility == NuclearCruiser.Fragility.Default ||
             __instance.averageVelocity.magnitude < NuclearCruiser.minimumCrashVelocity ||
             cruiserNuker.isProtected)
         {
