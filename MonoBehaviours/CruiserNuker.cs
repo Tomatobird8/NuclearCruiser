@@ -9,9 +9,16 @@ public class CruiserNuker : MonoBehaviour
     public void Explode()
     {
         GameObject? nukeObject = Instantiate(NuclearCruiser.nukeObject);
-        if (nukeObject != null)
+        if (nukeObject == null) return;
+        nukeObject.transform.position = gameObject.transform.position;
+        Vector3 cameraPos = StartOfRound.Instance.activeCamera.transform.position;
+        if (Vector3.Distance(nukeObject.transform.position, cameraPos) < 60f * NuclearCruiser.nukeScale)
         {
-            nukeObject.transform.position = gameObject.transform.position;
+            HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
+        }
+        else
+        {
+            HUDManager.Instance.ShakeCamera(ScreenShakeType.Long);
         }
     }
 
