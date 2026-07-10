@@ -27,7 +27,7 @@ public class NuclearCruiser : BaseUnityPlugin
 
     internal static GameObject? nukeObject;
 
-    internal static float nuclearCruiserChance = 1f;
+    internal static ConfigEntry<float> nuclearCruiserChance = null!;
 
     internal static float nukeScale = 0.5f;
     internal static ConfigEntry<float> nukeVolume = null!;
@@ -65,7 +65,7 @@ public class NuclearCruiser : BaseUnityPlugin
         }
         else
         {
-            nuclearCruiserChance = Config.Bind("General", "NuclearCruiserChance", 1f, new ConfigDescription("Chance of cruiser being a Nuclear Cruiser. 1 is always, 0 is never.", new AcceptableValueRange<float>(0f, 1f))).Value;
+            nuclearCruiserChance = Config.Bind("General", "NuclearCruiserChance", 1f, new ConfigDescription("Chance of cruiser being a Nuclear Cruiser. 1 is always, 0 is never.", new AcceptableValueRange<float>(0f, 1f)));
 
             nukeScale = Config.Bind("General", "NukeScale", 0.75f, "How large should the explosion be? 0.5 can already cover most of a moon's surface.").Value;
             nukeVolume = Config.Bind("General", "NukeVolume", 0.67f, new ConfigDescription("Sound volume of the nuclear explosion.", new AcceptableValueRange<float>(0f, 1f)));

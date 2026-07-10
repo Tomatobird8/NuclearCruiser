@@ -20,15 +20,15 @@ public static class FasterDropshipCompatibilityPatch
         };
 
         matcher.MatchForward(false, pattern)
-            .ThrowIfNotMatch("Couldn't find pattern in VehicleController.Start")
-            .SetAndAdvance(OpCodes.Call, AccessTools.Method(typeof(FasterDropshipCompatibilityPatch), nameof(DropshipDoesntExist)))
+            .ThrowIfNotMatch("Couldn't find pattern in VehicleController.Start. Dropship that ships the cruiser while ship is still in orbit will cause issues.")
+            .SetAndAdvance(OpCodes.Call, AccessTools.Method(typeof(FasterDropshipCompatibilityPatch), nameof(InShipPhaseNotLoadingLevel)))
             .RemoveInstruction();
 
         return matcher.InstructionEnumeration();
     }
     
-    public static bool DropshipDoesntExist()
+    public static bool InShipPhaseNotLoadingLevel()
     {
-        return !Object.FindAnyObjectByType<ItemDropship>();
+        return StartOfRound.Instance.inShipPhase && !StartOfRound.Instance.beganLoadingNewLevel;
     }
 }

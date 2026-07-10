@@ -12,9 +12,9 @@ public class CruiserNuker : MonoBehaviour
         if (nukeObject == null) return;
         nukeObject.transform.position = gameObject.transform.position;
         Vector3 cameraPos = StartOfRound.Instance.activeCamera.transform.position;
-        if (Vector3.Distance(nukeObject.transform.position, cameraPos) < 60f * NuclearCruiser.nukeScale)
+        if (Vector3.Distance(nukeObject.transform.position, cameraPos) < 100f * NuclearCruiser.nukeScale)
         {
-            HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
+            HUDManager.Instance.ShakeCamera(ScreenShakeType.VeryStrong);
         }
         else
         {
@@ -35,7 +35,6 @@ public class CruiserNuker : MonoBehaviour
         if (NuclearCruiser.infiniteBoosts)
         {
             vehicleController.turboBoosts = 5;
-            vehicleController.AddTurboBoost();
         }
         MeshRenderer[] meshRenderers = GetComponentsInChildren<MeshRenderer>();
         for (int i = 0; i < meshRenderers.Length; i++)

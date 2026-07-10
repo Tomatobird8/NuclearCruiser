@@ -16,14 +16,13 @@ public static class VehicleControllerPatch
             return;
         }           
         // Cruiser state is only randomized upon purchase.
-        ItemDropship ship = Object.FindAnyObjectByType<ItemDropship>(FindObjectsInactive.Exclude);
-        if (!__instance.NetworkManager.IsServer || ship == null || __instance.magnetedToShip)
+        if (!__instance.NetworkManager.IsServer || (StartOfRound.Instance.inShipPhase && !StartOfRound.Instance.beganLoadingNewLevel) || __instance.magnetedToShip)
         {
             return;
         }
         System.Random random = new();
         float value = (float)random.NextDouble();
-        if (value < NuclearCruiser.nuclearCruiserChance)
+        if (value < NuclearCruiser.nuclearCruiserChance.Value)
         {
             Network.NetworkHandler.Instance.AddCruiserNukerRpc(__instance);
             Terminal terminalScript = HUDManager.Instance.terminalScript;
@@ -50,7 +49,7 @@ public static class VehicleControllerPatch
         {
             return;
         }     
-        __instance.turboBoosts = 5;      
+        __instance.turboBoosts = 5;
     }
 
     [HarmonyPatch(nameof(VehicleController.DestroyCar))]
